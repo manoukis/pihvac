@@ -3,6 +3,8 @@
 import RPi.GPIO as GPIO
 import time
 
+# Controlling AC, heat, humidifier, and dehumidifier
+
 PIN_AC = 11 # GPIO17
 PIN_HEAT = 12 # GPIO18
 PIN_HUMID = 13 # GPIO27
