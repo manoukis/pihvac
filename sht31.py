@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # from: http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 
+import sys
 import smbus
 import time
 
@@ -14,8 +15,11 @@ class SHT31:
         self.prev_T = None
         self.prev_RH = None
 
-    def _calculate_checksum(data, number_of_bytes):
+    @staticmethod
+    def _calculate_checksum(data, number_of_bytes=None):
         """CRC Checksum using the polynomial given in the SHT31 datasheet"""
+        if number_of_bytes is None:
+            number_of_bytes = len(data)
         # CRC
         POLYNOMIAL = 0x131  # //P(x)=x^8+x^5+x^4+1 = 100110001
         crc = 0xFF
@@ -48,14 +52,16 @@ class SHT31:
         else:
             raise ValueError("rep must be 'high', 'med', or 'low'")
         # Send command
-        bus.write_i2c_block_data(self.addr, 0x2C, [lsb])
+        self.bus.write_i2c_block_data(self.addr, 0x2C, [lsb])
         # delay
         time.sleep(delay)
-        # Read data back from 0x00(00), 6 bytes
-        # Temp MSB, Temp LSB, Temp CRC, Humididty MSB, Humidity LSB, Humidity CRC
-        data = bus.read_i2c_block_data(self.addr, 0x00, 6)
+        # Read data back from 0x00; 6 bytes [T MSB, T LSB, T CRC, RH MSB, RH LSB, RH CRC]
+        data = self.bus.read_i2c_block_data(self.addr, 0x00, 6)
         # Check CRC
-
+        if data[2] != self._calculate_checksum(data[0:2]):
+            raise ConnectionError("CRC failed on I2C read from SHT31")
+        if data[5] != self._calculate_checksum(data[3:5]):
+            raise ConnectionError("CRC failed on I2C read from SHT31")
         # Save previous values (just in case)
         self.prev_T = self.T
         self.prev_RH = self.RH
@@ -64,17 +70,16 @@ class SHT31:
         self.RH = 100 * (data[3]*256 + data[4]) / 65535.0
         return self.T, self.RH
 
-# Get I2C bus
-bus = smbus.SMBus(1)
 
-sht = SHT31(bus)
-for i in range(10):
-    T, RH = sht.read(rep='high')
-    print(T, RH)
 
-temp, humidity = sht.read(rep='low')
-print("Temperature in Celsius is : {:.2f} C".format(temp))
-print("Relative Humidity is : {:.2f} %RH".format(humidity))
+def run_test():
+    # Get I2C bus
+    bus = smbus.SMBus(1)
+
+    sht = SHT31(bus)
+    for i in range(10):
+        T, RH = sht.read(rep='high')
+        print(T, RH)
 
 ##print(" ".join([hex(_) for _ in data]))
 # Temperature checksum
@@ -83,3 +88,8 @@ print("Relative Humidity is : {:.2f} %RH".format(humidity))
 ## Humidity checksum
 #crc = _calculate_checksum(data[3:5], 2)
 #print(hex(crc))
+
+## Main loop hook for running as a script
+if __name__ == "__main__":
+    sys.exit(run_test())
+
