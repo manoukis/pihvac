@@ -3,6 +3,8 @@
 Controlling AC, heat, humidifier, and dehumidifier
 """
 
+import os
+import sys
 import RPi.GPIO as GPIO
 import time
 import smbus
@@ -10,16 +12,18 @@ import sht31
 
 ## Config values -- @TCC Move these to a config file
 # setpoints
-TSP = 24  # temperature setpoint in 'C
+TSP = 22  # temperature setpoint in 'C
 HSP = 80  # RH setpoint in %
 
-dT_h = 2  # delta T above to trigger AC
-dT_l = 2  # delta T below to trigger Heat
-dT_h2l = 1  # delta T above to turn off AC (hysteresis)
-dT_l2h = 1  # delta T below to turn off Heat (hysteresis)
+dT_h = 1  # delta T above to trigger AC
+dT_l = 1  # delta T below to trigger Heat
+dT_h2l = -0.5  # delta T above to turn off AC (hysteresis); <0 will overshoot
+dT_l2h = -0.5  # delta T below to turn off Heat (hysteresis); <0 will overshoot
 
 
 # Less mutable config values
+POLLING_TIME = 10 # in seconds
+
 PIN_AC = 11 # GPIO17
 PIN_HEAT = 12 # GPIO18
 PIN_HUMID = 13 # GPIO27
@@ -27,24 +31,51 @@ PIN_HUMID = 13 # GPIO27
 PIN_DEHUMID = 15 # GPIO22
 
 
+class Appliance:
+    def __init__(self, pin):
+        self.pin = pin
+        self.state = None # 0=off, 1=on
+        GPIO.setup(self.pin, GPIO.OUT)
+        self.turn_off()
+    
+    def turn_on(self):
+        GPIO.output(self.pin, GPIO.HIGH)
+        self.state = 1
+        
+    def turn_off(self):
+        GPIO.output(self.pin, GPIO.LOW)
+        self.state = 0
+
+    def is_on(self):
+        return self.state == 1
+
+
 # Setup the GPIO pins
 GPIO.setmode(GPIO.BOARD) # GPIO.BCM would be pin numbers like 17 for GPIO17
 GPIO.setwarnings(True)
-for pin in [PIN_AC, PIN_HEAT, PIN_HUMID, PIN_DEHUMID]:
-    GPIO.setup(pin, GPIO.OUT)
+
+ac = Appliance(PIN_AC)
+heat = Appliance(PIN_HEAT)
+humid = Appliance(PIN_HUMID)
+dehumid = Appliance(PIN_DEHUMID)
 
 # Setup the temperature/RH sensor
 i2cbus = smbus.SMBus(1)
 sht = sht31.SHT31(i2cbus)
 
 try:
-    for i in range(100):
+    humid.turn_on()
+    while True:
         T,RH = sht.read()
-        print(T,RH)
-        GPIO.output(PIN_AC, GPIO.HIGH)
-        time.sleep(1.0)
-        GPIO.output(PIN_AC, GPIO.LOW)
-        time.sleep(1.0)
+        if T > TSP + dT_h:
+            ac.turn_on()
+            dehumid.turn_off()
+        if ac.is_on() and T < TSP + dT_h2l:
+            ac.turn_off()
+        print(T, RH, ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on())
+        sys.stdout.flush()
+        # delay until next polling cycle
+        time.sleep(POLLING_TIME)
 
 except KeyboardInterrupt:
     raise
