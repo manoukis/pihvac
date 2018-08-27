@@ -8,6 +8,7 @@ import sys
 import RPi.GPIO as GPIO
 import time
 import smbus
+import datetime
 import sht31
 
 ## Config values -- @TCC Move these to a config file
@@ -49,6 +50,9 @@ class Appliance:
     def is_on(self):
         return self.state == 1
 
+# Timezone info just for outputting proper localtime format
+utc_offset_sec = time.altzone if time.localtime().tm_isdst else time.timezone
+utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
 
 # Setup the GPIO pins
 GPIO.setmode(GPIO.BOARD) # GPIO.BCM would be pin numbers like 17 for GPIO17
@@ -72,8 +76,11 @@ try:
             dehumid.turn_off()
         if ac.is_on() and T < TSP + dT_h2l:
             ac.turn_off()
-        print(T, RH, ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on())
+
+        timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone(offset=utc_offset)).isoformat()
+        print(timestamp, T, RH, ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on(), sep='\t')
         sys.stdout.flush()
+
         # delay until next polling cycle
         time.sleep(POLLING_TIME)
 
