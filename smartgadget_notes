@@ -1,0 +1,69 @@
+Useful reference code: https://github.com/Sensirion/libble-android/tree/master/libsmartgadget/src/main/java/com/sensirion/libsmartgadget/smartgadget
+BLE Profile description: https://github.com/Sensirion/SmartGadget-Firmware/blob/master/Simple_BLE_Profile_Description.pdf
+
+
+> gattool -I -t random -b CA:34:B1:3D:25:42
+Attempting to connect to CA:34:B1:3D:25:42
+Connection successful
+[CA:34:B1:3D:25:42][LE]> char-read-hnd 0x001e
+Characteristic value/descriptor: 00 00
+[CA:34:B1:3D:25:42][LE]> char-read-hnd 0x001f
+Characteristic value/descriptor: 41 ee 68 3a 99 0f 0e 72 85 49 8d b3 34 f2 00 00
+[CA:34:B1:3D:25:42][LE]> primary
+attr handle: 0x0001, end grp handle: 0x0007 uuid: 00001800-0000-1000-8000-00805f9b34fb
+attr handle: 0x0008, end grp handle: 0x000b uuid: 00001801-0000-1000-8000-00805f9b34fb
+attr handle: 0x000c, end grp handle: 0x001a uuid: 0000180a-0000-1000-8000-00805f9b34fb
+attr handle: 0x001b, end grp handle: 0x001e uuid: 0000180f-0000-1000-8000-00805f9b34fb
+attr handle: 0x001f, end grp handle: 0x002f uuid: 0000f234-b38d-4985-720e-0f993a68ee41
+attr handle: 0x0030, end grp handle: 0x0034 uuid: 00001234-b38d-4985-720e-0f993a68ee41
+attr handle: 0x0035, end grp handle: 0xffff uuid: 00002234-b38d-4985-720e-0f993a68ee41
+
+
+Battery (64 is full)
+> characteristics 0x001b 0x001e
+handle: 0x001c, char properties: 0x12, char value handle: 0x001d, uuid: 00002a19-0000-1000-8000-00805f9b34fb
+> char-read-hnd 0x01d
+or by UUID
+> char-read-uuid 2a19
+
+Temperature
+> characteristics 0x0035 0xffff
+handle: 0x0036, char properties: 0x12, char value handle: 0x0037, uuid: 00002235-b38d-4985-720e-0f993a68ee41
+> char-read-hnd 0x037
+Characteristic value/descriptor: 00 00 e0 41
+> char-read-uuid 00002235-b38d-4985-720e-0f993a68ee41
+handle: 0x0037   value: 00 00 e0 41
+
+Humidity
+> characteristics 0x0030 0x0034
+handle: 0x0031, char properties: 0x12, char value handle: 0x0032, uuid: 00001235-b38d-4985-720e-0f993a68ee41
+> char-read-hnd 0x032
+Characteristic value/descriptor: 00 00 95 42
+> char-read-uuid 00001235-b38d-4985-720e-0f993a68ee41
+handle: 0x0032   value: e1 fa 8f 42
+
+
+
+Install Berryconda3
+
+For pygatt based...
+conda install pexcpet
+pip install pygatt
+
+For bybluez base... NOT WORKING (can read batt, but that is it)
+sudo apt-get install libbluetooth-dev
+sudo apt-get install libglib2.0-dev 
+pip install pybluez
+pip install pygattlib
+ugh.. not building
+
+trying to follow https://michaeljalloh.wordpress.com/2016/12/16/how-to-setup-bluetooth-on-the-raspberry-pi-3-to-work-with-python/
+sudo apt-get install mercurial pkg-config libboost-python-dev libboost-thread-dev libbluetooth-dev libglib2.0-dev python-dev
+hg clone https://bitbucket.org/OscarAcena/pygattlib
+cd pygattlib
+edit setup.py to change boost_python-py34 to 35 or whatever is actually installed
+python setup.py install
+cd ..
+git clone https://github.com/karulis/pybluez.git
+cd pybluez
+python setup.py install
