@@ -1,19 +1,32 @@
-#!/usr/bin/python3
-# from: http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
+#!/usr/bin/env python3
+# parts adapted from: http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 
 import sys
-import smbus
+import smbus2 as smbus
+import RPi.GPIO as GPIO
 import time
 
 
 class SHT31:
-    def __init__(self, sm_bus, i2c_address=0x44):
+    _default_address = 0x44
+    _alt_address = 0x45
+
+    def __init__(self, sm_bus, addr_gpio=None, i2c_address=None):
+        """Setting addr_gpio overrides i2c_address to _alt_address for reads"""
         self.bus = sm_bus
         self.addr = i2c_address
+        self.addr_gpio = addr_gpio
         self.T = None
         self.RH = None
         self.prev_T = None
         self.prev_RH = None
+        if self.addr is None:
+            self.addr = type(self)._default_address
+        # if addr_gpio is set, use it to multiplex (reading at address 0x45)
+        if self.addr_gpio is not None:
+            self.addr = type(self)._alt_address
+            GPIO.setup(self.addr_gpio, GPIO.OUT)
+            GPIO.output(self.addr_gpio, GPIO.LOW)
 
     @staticmethod
     def _calculate_checksum(data, number_of_bytes=None):
@@ -33,6 +46,12 @@ class SHT31:
                     crc = (crc << 1)
         return crc
 
+    def get_addr_gpio(self): return self.addr_gpio
+    def get_T(self): return self.T
+    def get_RH(self): return self.RH
+    def get_prev_T(self): return self.prev_T
+    def get_prev_RH(self): return self.prev_RH
+
     def read(self, rep='high', delay=None):
         # rep is 'repeatability'; basically quality but see the datasheet
         # High repeatablity measurement with clock stretching 0x2C 0x06 (default)
@@ -51,12 +70,18 @@ class SHT31:
             if delay is None: delay = 0.002
         else:
             raise ValueError("rep must be 'high', 'med', or 'low'")
+        # if using addr pin to enable read at 0x45, do so
+        if self.addr_gpio is not None:
+            GPIO.output(self.addr_gpio, GPIO.HIGH)
         # Send command
         self.bus.write_i2c_block_data(self.addr, 0x2C, [lsb])
         # delay
         time.sleep(delay)
         # Read data back from 0x00; 6 bytes [T MSB, T LSB, T CRC, RH MSB, RH LSB, RH CRC]
         data = self.bus.read_i2c_block_data(self.addr, 0x00, 6)
+        # if using addr pin, switch back to 0x44 to free up 0x45
+        if self.addr_gpio is not None:
+            GPIO.output(self.addr_gpio, GPIO.LOW)
         # Check CRC
         if data[2] != self._calculate_checksum(data[0:2]):
             raise ConnectionError("CRC failed on I2C read from SHT31")
@@ -73,21 +98,33 @@ class SHT31:
 
 
 def run_test():
-    # Get I2C bus
-    bus = smbus.SMBus(1)
+    try: # outer try/except/finally to ensure cleanup
+        # GPIO boilerplate
+        GPIO.setmode(GPIO.BCM) # GPIO.BCM is numbers like 17 for GPIO17
+        GPIO.setwarnings(True)
 
-    sht = SHT31(bus)
-    for i in range(10):
-        T, RH = sht.read(rep='high')
-        print(T, RH)
+        ## Testing using address pin to select active device amoung many
+        sht_a = SHT31(smbus.SMBus(1), addr_gpio=20)
+        sht_b = SHT31(smbus.SMBus(1), addr_gpio=21)
 
-##print(" ".join([hex(_) for _ in data]))
-# Temperature checksum
-#crc = _calculate_checksum(data[0:2], 2)
-#print(hex(crc))
-## Humidity checksum
-#crc = _calculate_checksum(data[3:5], 2)
-#print(hex(crc))
+        for sht in [sht_a, sht_b]:
+            timefoo = time.time()
+            print("Reading from SHT31 on pin", sht.get_addr_gpio())
+            for i in range(10):
+                T, RH = sht.read()
+                print(T, RH)
+            print("Elapsed:", time.time()-timefoo)
+
+        for sht in [sht_a, sht_b]:
+            timefoo = time.time()
+            print("Reading from SHT31 on pin", sht.get_addr_gpio(), ": Low repeatability")
+            for i in range(10):
+                T, RH = sht.read(rep='low')
+                print(T, RH)
+            print("Elapsed:", time.time()-timefoo)
+
+    finally: # ensure cleanup
+        GPIO.cleanup()
 
 ## Main loop hook for running as a script
 if __name__ == "__main__":
