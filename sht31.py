@@ -107,8 +107,8 @@ def run_test():
         ## Testing using address pin to select active device amoung many
         sht_list = [
             SHT31(smbus.SMBus(1), addr_gpio=4),
-            SHT31(smbus.SMBus(1), addr_gpio=20),
-            SHT31(smbus.SMBus(1), addr_gpio=21),
+            SHT31(smbus.SMBus(1), addr_gpio=17),
+            SHT31(smbus.SMBus(1), addr_gpio=27),
             ]
 
         for sht in sht_list:

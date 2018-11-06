@@ -25,11 +25,11 @@ dT_l2h = -0.5  # delta T below to turn off Heat (hysteresis); <0 will overshoot
 # Less mutable config values
 POLLING_TIME = 10 # in seconds
 
-PIN_AC = 11 # GPIO17
-PIN_HEAT = 12 # GPIO18
-PIN_HUMID = 13 # GPIO27
+PIN_AC = 17 # GPIO17
+PIN_HEAT = 18 # GPIO18
+PIN_HUMID = 27 # GPIO27
 # pin 14 GND
-PIN_DEHUMID = 15 # GPIO22
+PIN_DEHUMID = 22 # GPIO22
 
 
 class Appliance:
@@ -55,7 +55,7 @@ utc_offset_sec = time.altzone if time.localtime().tm_isdst else time.timezone
 utc_offset = datetime.timedelta(seconds=-utc_offset_sec)
 
 # Setup the GPIO pins
-GPIO.setmode(GPIO.BOARD) # GPIO.BCM would be pin numbers like 17 for GPIO17
+GPIO.setmode(GPIO.BCM) # GPIO.BCM to use pin numbers like 17 for GPIO17
 GPIO.setwarnings(True)
 
 ac = Appliance(PIN_AC)
