@@ -7,6 +7,7 @@ import RPi.GPIO as GPIO
 import time
 import errno
 
+TEST_GPIO_PINS = [4]#,17,27]
 
 class SHT31:
     _default_address = 0x44
@@ -105,11 +106,9 @@ def run_test():
         GPIO.setwarnings(True)
 
         ## Testing using address pin to select active device amoung many
-        sht_list = [
-            SHT31(smbus.SMBus(1), addr_gpio=4),
-            SHT31(smbus.SMBus(1), addr_gpio=17),
-            SHT31(smbus.SMBus(1), addr_gpio=27),
-            ]
+        sht_list = []
+        for pin in TEST_GPIO_PINS:
+            sht_list.append(SHT31(smbus.SMBus(1), addr_gpio=pin))
 
         for sht in sht_list:
             timefoo = time.time()
