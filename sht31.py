@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 import time
 import errno
 
-TEST_GPIO_PINS = [4]#,17,27]
+TEST_GPIO_PINS = [4,17,27]
 
 class SHT31:
     _default_address = 0x44
@@ -18,8 +18,11 @@ class SHT31:
         self.bus = sm_bus
         self.addr = i2c_address
         self.addr_gpio = addr_gpio
+        self.last_read_error = None
+        self.read_time = None
         self.T = None
         self.RH = None
+        self.prev_read_time = None
         self.prev_T = None
         self.prev_RH = None
         if self.addr is None:
@@ -49,12 +52,15 @@ class SHT31:
         return crc
 
     def get_addr_gpio(self): return self.addr_gpio
+    def get_last_read_error(self): return self.last_read_error
+    def get_read_time(self): return self.read_time
     def get_T(self): return self.T
     def get_RH(self): return self.RH
+    def get_prev_read_time(self): return self.prev_read_time
     def get_prev_T(self): return self.prev_T
     def get_prev_RH(self): return self.prev_RH
 
-    def read(self, rep='high', delay=None):
+    def read(self, rep='high', delay=None, nofail=False):
         # rep is 'repeatability'; basically quality but see the datasheet
         # High repeatablity measurement with clock stretching 0x2C 0x06 (default)
         # Med repeatablity measurement with clock stretching 0x2C 0x0D
@@ -72,31 +78,50 @@ class SHT31:
             if delay is None: delay = 0.002
         else:
             raise ValueError("rep must be 'high', 'med', or 'low'")
-        # if using addr pin to enable read at 0x45, do so
-        if self.addr_gpio is not None:
-            GPIO.output(self.addr_gpio, GPIO.HIGH)
-        # Send command
-        self.bus.write_i2c_block_data(self.addr, 0x2C, [lsb])
-        # delay
-        time.sleep(delay)
-        # Read data back from 0x00; 6 bytes [T MSB, T LSB, T CRC, RH MSB, RH LSB, RH CRC]
-        data = self.bus.read_i2c_block_data(self.addr, 0x00, 6)
-        # if using addr pin, switch back to 0x44 to free up 0x45
-        if self.addr_gpio is not None:
-            GPIO.output(self.addr_gpio, GPIO.LOW)
-        # Check CRC
-        if data[2] != self._calculate_checksum(data[0:2]):
-            raise ConnectionError("CRC failed on I2C read from SHT31")
-        if data[5] != self._calculate_checksum(data[3:5]):
-            raise ConnectionError("CRC failed on I2C read from SHT31")
-        # Save previous values (just in case)
-        self.prev_T = self.T
-        self.prev_RH = self.RH
-        # Convert the data
-        self.T = -45 + (175 * (data[0]*256 + data[1]) / 65535.0) # in 'C
-        self.RH = 100 * (data[3]*256 + data[4]) / 65535.0
-        return self.T, self.RH
 
+        self.last_read_error = None
+        read_time = time.time()
+        try:
+            # if using addr pin to enable read at 0x45, do so
+            if self.addr_gpio is not None:
+                GPIO.output(self.addr_gpio, GPIO.HIGH)
+            # Send command
+            self.bus.write_i2c_block_data(self.addr, 0x2C, [lsb])
+            # delay
+            time.sleep(delay)
+            # Read data back from 0x00; 6 bytes [T MSB, T LSB, T CRC, RH MSB, RH LSB, RH CRC]
+            data = self.bus.read_i2c_block_data(self.addr, 0x00, 6)
+            # if using addr pin, switch back to 0x44 to free up 0x45
+            if self.addr_gpio is not None:
+                GPIO.output(self.addr_gpio, GPIO.LOW)
+            # Check CRC
+            if data[2] != self._calculate_checksum(data[0:2]):
+                raise ConnectionError("CRC failed on I2C read from SHT31")
+            if data[5] != self._calculate_checksum(data[3:5]):
+                raise ConnectionError("CRC failed on I2C read from SHT31")
+        except ConnectionError as e:
+            self.last_read_error = e
+            if not nofail:
+                raise e
+        except OSError as e:
+            self.last_read_error = e
+            data = None
+            if e.errno != 121 or not nofail: # 121 is Remote I/O Error
+                raise e
+        # save the previous read if it was good
+        if self.T is not None: # prev read was good, save it
+            self.prev_read_time = self.read_time
+            self.prev_T = self.T
+            self.prev_RH = self.RH
+        # interpret this read: failed set values to None, otherwise convert data to values
+        if self.last_read_error is not None: # read failed but called with nofail
+            self.T = None
+            self.RH = None
+        else: # good read, convert the data to values
+            self.T = -45 + (175 * (data[0]*256 + data[1]) / 65535.0) # in 'C
+            self.RH = 100 * (data[3]*256 + data[4]) / 65535.0
+        self.read_time = read_time
+        return self.T, self.RH
 
 
 def run_test():
@@ -114,14 +139,20 @@ def run_test():
             timefoo = time.time()
             print("Reading from SHT31 on pin", sht.get_addr_gpio())
             for i in range(10):
-                try:
-                    T, RH = sht.read(rep='high')
-                    print(T, RH)
-                except ConnectionError as e:
-                    print("FAILED:", e)
-                except OSError as e:
-                    if e.errno == 121: # 121 is Remote I/O Error
-                        print("FAILED:", e)
+                # read with nofail
+                T, RH = sht.read(rep='high', nofail=True)
+                print(sht.get_read_time(), T, RH, sht.get_last_read_error(),
+                    sht.get_prev_read_time(), sht.get_prev_T(), sht.get_prev_RH())
+
+## Code example for reading without nofail set (handling exceptions here)
+#                try:
+#                    T, RH = sht.read(rep='high')
+#                    print(T, RH)
+#                except ConnectionError as e:
+#                    print("FAILED:", e)
+#                except OSError as e:
+#                    if e.errno == 121: # 121 is Remote I/O Error
+#                        print("FAILED:", e)
             print("Elapsed:", time.time()-timefoo)
 
 #        for sht in sht_list:

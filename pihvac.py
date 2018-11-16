@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 """
 Controlling AC, heat, humidifier, and dehumidifier
 """
@@ -7,7 +7,7 @@ import os
 import sys
 import RPi.GPIO as GPIO
 import time
-import smbus
+import smbus2 as smbus
 import datetime
 import sht31
 
@@ -24,6 +24,9 @@ dT_l2h = -0.5  # delta T below to turn off Heat (hysteresis); <0 will overshoot
 
 # Less mutable config values
 POLLING_TIME = 10 # in seconds
+READ_FAILED_POLLING_TIME = 1 # delay before retrying if a T/RH read failed
+
+PIN_SHT31 = 4 # GPIO4 ; address pin for SHT31
 
 PIN_AC = 17 # GPIO17
 PIN_HEAT = 18 # GPIO18
@@ -38,11 +41,11 @@ class Appliance:
         self.state = None # 0=off, 1=on
         GPIO.setup(self.pin, GPIO.OUT)
         self.turn_off()
-    
+
     def turn_on(self):
         GPIO.output(self.pin, GPIO.HIGH)
         self.state = 1
-        
+
     def turn_off(self):
         GPIO.output(self.pin, GPIO.LOW)
         self.state = 0
@@ -64,13 +67,18 @@ humid = Appliance(PIN_HUMID)
 dehumid = Appliance(PIN_DEHUMID)
 
 # Setup the temperature/RH sensor
-i2cbus = smbus.SMBus(1)
-sht = sht31.SHT31(i2cbus)
+sht = sht31.SHT31(smbus.SMBus(1), addr_gpio=PIN_SHT31)
 
 try:
     humid.turn_on()
     while True:
-        T,RH = sht.read()
+        T, RH = sht.read(rep='high', nofail=True)
+        if sht.get_last_read_error() is not None: # read failed, delay and try again
+            # @TCC NEED TO TRIGGER SENDING AN ALARM HERE
+            print("T/RH READ FAILED")
+            time.sleep(READ_FAILED_POLLING_TIME)
+            continue
+
         if T > TSP + dT_h:
             ac.turn_on()
             dehumid.turn_off()
@@ -78,7 +86,8 @@ try:
             ac.turn_off()
 
         timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone(offset=utc_offset)).isoformat()
-        print(timestamp, T, RH, ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on(), sep='\t')
+        print(timestamp, "{:0.2f}\t{:0.2f}".format(T,RH),
+                ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on(), sep='\t')
         sys.stdout.flush()
 
         # delay until next polling cycle
