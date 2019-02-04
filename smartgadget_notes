@@ -1,6 +1,8 @@
 Useful reference code: https://github.com/Sensirion/libble-android/tree/master/libsmartgadget/src/main/java/com/sensirion/libsmartgadget/smartgadget
 BLE Profile description: https://github.com/Sensirion/SmartGadget-Firmware/blob/master/Simple_BLE_Profile_Description.pdf
 
+Install bluz (for gatttool mostly)
+> sudo apt-get install bluz
 
 > gattool -I -t random -b CA:34:B1:3D:25:42
 Attempting to connect to CA:34:B1:3D:25:42
