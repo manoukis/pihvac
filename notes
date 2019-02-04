@@ -1,3 +1,9 @@
+install berryconda3
+https://github.com/jjhelmus/berryconda
+
+pip install RPi.GPIO smbus2
+
+
 # additional packages
 
 ## For webcam monitoring

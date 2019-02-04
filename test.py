@@ -7,21 +7,23 @@ import time
 
 PIN_AC = 11 # GPIO17
 PIN_HEAT = 12 # GPIO18
-PIN_HUMID = 13 # GPIO27
+PIN_DEHUMID = 13 # GPIO27
 # pin 14 GND
-PIN_DEHUMID = 15 # GPIO22
+PIN_HUMID = 15 # GPIO22
 
 GPIO.setmode(GPIO.BOARD) # GPIO.BCM would be pin numbers like 17 for GPIO17
 GPIO.setwarnings(True)
 
-GPIO.setup(PIN_AC, GPIO.OUT)
+pin = PIN_AC
+
+GPIO.setup(pin, GPIO.OUT)
 
 try:
-    for i in range(100):
-        GPIO.output(PIN_AC, GPIO.HIGH)
+    for i in range(5):
+        GPIO.output(pin, GPIO.LOW)
         time.sleep(1.0)
-        GPIO.output(PIN_AC, GPIO.LOW)
-        time.sleep(1.0)
+        GPIO.output(pin, GPIO.HIGH)
+        time.sleep(0.5)
 
 except KeyboardInterrupt:
     raise
