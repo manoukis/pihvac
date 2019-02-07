@@ -13,18 +13,18 @@ import sht31
 
 ## Config values -- @TCC Move these to a config file
 # setpoints
-TSP = 23  # temperature setpoint in 'C
-HSP = 80  # RH setpoint in %
+TSP = 24.5  # temperature setpoint in 'C
+HSP = 70  # RH setpoint in %
 
-dT_h = 1  # delta T above to trigger AC
-dT_l = 1  # delta T below to trigger Heat
-dT_h2l = -0.25  # delta T above to turn off AC (hysteresis); <0 will overshoot
-dT_l2h = -0.25  # delta T below to turn off Heat (hysteresis); <0 will overshoot
+dT_h = 0.5  # delta T above to trigger AC
+dT_l = 0.5  # delta T below to trigger Heat
+dT_h2l = -0.5*dT_l  # delta T above to turn off AC (hysteresis); <0 will overshoot
+dT_l2h = -0.5*dT_h  # delta T below to turn off Heat (hysteresis); <0 will overshoot
 
 dH_h = 5  # delta H above to trigger Humid
 dH_l = 5  # delta H below to trigger Dehumid
-dH_h2l = 0  # delta H above to turn off Humid (hysteresis); <0 will overshoot
-dH_l2h = 0  # delta H below to turn off Dehumid (hysteresis); <0 will overshoot
+dH_h2l = -0.5*dH_l  # delta H above to turn off Humid (hysteresis); <0 will overshoot
+dH_l2h = -0.5*dH_h  # delta H below to turn off Dehumid (hysteresis); <0 will overshoot
 
 # Less mutable config values
 POLLING_TIME = 10 # in seconds
@@ -32,11 +32,12 @@ READ_FAILED_POLLING_TIME = 1 # delay before retrying if a T/RH read failed
 
 PIN_SHT31 = 4 # GPIO4 ; address pin for SHT31
 
-PIN_AC = 17 # GPIO17
-PIN_HEAT = 18 # GPIO18
-PIN_HUMID = 27 # GPIO27
-# pin 14 GND
-PIN_DEHUMID = 22 # GPIO22
+PIN_AC = 19 # pin 35, GPIO19
+PIN_HEAT = 16 # pin 36, GPIO16
+PIN_DEHUMID = 26 # pin 37, GPIO26
+PIN_HUMID = 20 # pin 38, GPIO20
+PIN_FAN = 13 # pin 33, GPIO13
+PIN_LIGHT = 21 # pin 40, GPIO21
 
 # @TCC TODO add light and fan control
 
@@ -48,10 +49,12 @@ class Appliance:
         self.turn_off()
 
     def turn_on(self):
+        #print(self.pin, "on")
         GPIO.output(self.pin, GPIO.HIGH)
         self.state = 1
 
     def turn_off(self):
+        #print(self.pin, "off")
         GPIO.output(self.pin, GPIO.LOW)
         self.state = 0
 
@@ -97,6 +100,7 @@ try:
             heat.turn_off()
         ## Dehumid ## @TCC not certain about interplay with ac and heat
         if not ac.is_on() and not heat.is_on() and H > HSP + dH_h:
+        #if H > HSP + dH_h:
             dehumid.turn_on()
         if H < HSP + dH_h2l:
             dehumid.turn_off()

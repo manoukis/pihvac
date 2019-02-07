@@ -4,6 +4,15 @@ https://github.com/jjhelmus/berryconda
 pip install RPi.GPIO smbus2
 
 
+## monitoring
+sudo apt-get install postfix mailutils
+setup postfix as "internet site"
+
+edit /ect/postfix/main.cf
+# restrict to local sending only using ipv4
+inet_interfaces = loopback-only
+inet_protocols = ipv4
+
 # additional packages
 
 ## For webcam monitoring

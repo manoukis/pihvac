@@ -14,16 +14,19 @@ PIN_HUMID = 15 # GPIO22
 GPIO.setmode(GPIO.BOARD) # GPIO.BCM would be pin numbers like 17 for GPIO17
 GPIO.setwarnings(True)
 
-pin = PIN_AC
-
-GPIO.setup(pin, GPIO.OUT)
+pin = 40
 
 try:
-    for i in range(5):
-        GPIO.output(pin, GPIO.LOW)
-        time.sleep(1.0)
-        GPIO.output(pin, GPIO.HIGH)
-        time.sleep(0.5)
+    GPIO.setup(pin, GPIO.OUT)
+    GPIO.output(pin, GPIO.HIGH)
+    time.sleep(10)
+
+#try:
+#    for i in range(5):
+#        GPIO.output(pin, GPIO.LOW)
+#        time.sleep(1.0)
+#        GPIO.output(pin, GPIO.HIGH)
+#        time.sleep(0.5)
 
 except KeyboardInterrupt:
     raise
