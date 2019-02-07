@@ -6,10 +6,14 @@ import time
 import struct
 import pygatt
 
+# To discover mac addresses of nearby (on) devices:
+# sudo hcitool lescan
 
-MACADDR = "CA:34:B1:3D:25:42"
+#MACADDR = "CA:34:B1:3D:25:42"
+MACADDR = "C4:29:BF:E7:CA:98"
+
+
 ADDRESS_TYPE = pygatt.BLEAddressType.random
-
 TEMPERATURE_UUID = "00002235-b38d-4985-720e-0f993a68ee41"
 HUMIDITY_UUID = "00001235-b38d-4985-720e-0F993a68ee41"
 BATTERY_UUID = "2A19"
