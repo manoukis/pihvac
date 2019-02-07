@@ -7,3 +7,21 @@ Raspberry pi control of temperature and humidity by switiching AC, heat, humidif
 
 There are various other files from trying out various interfaces (bokeh and cgi/www) as well as other cruft.  
 Potentially of use is `smartgadgetBLEread.py` which reads data from a Sensitron SHT31 SmartGadget via bluetooth.
+
+
+## pihvac.py
+
+nominal output are tab separated rows like:
+'''
+2019-02-07T12:26:09.633537-10:00        24.96   24.50   70.46   70.00   False  False    False   False   True
+'''
+- Timestamp
+- Temperature last sensor read
+- Temperature setpoint
+- Relative humidity last sensor read
+- Relative humidity setpoint
+- AC is on?
+- Heat is on?
+- Humidifier is on?
+- Dehumidifier is on?
+- Light is on?

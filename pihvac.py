@@ -128,7 +128,7 @@ try:
         timestamp = datetime.datetime.now().replace(tzinfo=datetime.timezone(offset=utc_offset)).isoformat()
         print(timestamp, "{:0.2f}\t{:0.2f}".format(T,TSP),
                 "{:0.2f}\t{:0.2f}".format(H,HSP),
-                ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on(), sep='\t')
+                ac.is_on(), heat.is_on(), humid.is_on(), dehumid.is_on(), light.is_on(), sep='\t')
         sys.stdout.flush()
 
         # delay until next polling cycle
