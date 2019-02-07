@@ -23,3 +23,25 @@ nominal output are tab separated rows like:
 - Humidifier is on?
 - Dehumidifier is on?
 - Light is on?
+
+## Hardware
+
+SHT31 modules are connected to a Pi SMBUS using pins:  
+- 1 : 3v3
+- 3 : SDA1 I2C
+- 5 : SCL1 I2C
+- 7* : GPIO4 (or any other GPIO) connected to the SHT31 addr pin
+**Multiple SHT31 modules can share the same connections with the exception of this GPIO pin.**
+- 9 : Ground
+
+The Pi in the insectary container has 6 GPIO and 2 Ground connections wired over to the powertails/relays.
+Those are pins 33 to 40:
+- 33 : GPIO13 : Orange : Unused (labeled Fan)
+- 34 : Ground : Orange Stripe
+- 35 : GPIO19 : Green : **AC**
+- 36 : GPIO16 : Green Stripe : **Heater**
+- 37 : GPIO26 : Brown : **Dehumidifier**
+- 38 : GPIO20 : Brown Stripe : **Humidifer**
+- 39 : Ground : Blue
+- 40 : GPIO21 : Blue Stripe : **Light**
+
