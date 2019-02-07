@@ -11,7 +11,10 @@ import smbus2 as smbus
 import datetime
 import sht31
 
-## Config values -- @TCC Move these to a config file
+## Config values -- Should probably move these to a config file
+LIGHT_ON_TIME = "6:00"
+LIGHT_OFF_TIME = "18:00"
+
 # setpoints
 TSP = 24.5  # temperature setpoint in 'C
 HSP = 70  # RH setpoint in %
@@ -27,7 +30,7 @@ dH_h2l = -0.5*dH_l  # delta H above to turn off Humid (hysteresis); <0 will over
 dH_l2h = -0.5*dH_h  # delta H below to turn off Dehumid (hysteresis); <0 will overshoot
 
 # Less mutable config values
-POLLING_TIME = 10 # in seconds
+POLLING_TIME = 60 # in seconds
 READ_FAILED_POLLING_TIME = 1 # delay before retrying if a T/RH read failed
 
 PIN_SHT31 = 4 # GPIO4 ; address pin for SHT31
@@ -39,7 +42,7 @@ PIN_HUMID = 20 # pin 38, GPIO20
 PIN_FAN = 13 # pin 33, GPIO13
 PIN_LIGHT = 21 # pin 40, GPIO21
 
-# @TCC TODO add light and fan control
+# TODO add fan control
 
 class Appliance:
     def __init__(self, pin):
@@ -73,6 +76,7 @@ ac = Appliance(PIN_AC)
 heat = Appliance(PIN_HEAT)
 humid = Appliance(PIN_HUMID)
 dehumid = Appliance(PIN_DEHUMID)
+light = Appliance(PIN_LIGHT)
 
 # Setup the temperature/RH sensor
 sht = sht31.SHT31(smbus.SMBus(1), addr_gpio=PIN_SHT31)
@@ -85,6 +89,17 @@ try:
             print("T/RH READ FAILED")
             time.sleep(READ_FAILED_POLLING_TIME)
             continue
+
+        ## Light ##
+        nowtime = datetime.datetime.now()
+        tmp = datetime.datetime.strptime(LIGHT_ON_TIME, "%H:%M")
+        ontime = nowtime.replace(hour=tmp.hour, minute=tmp.minute)
+        tmp = datetime.datetime.strptime(LIGHT_OFF_TIME, "%H:%M")
+        offtime = nowtime.replace(hour=tmp.hour, minute=tmp.minute)
+        if nowtime > ontime and nowtime < offtime:
+            light.turn_on()
+        else:
+            light.turn_off()
 
         ## AC ##
         if T > TSP + dT_h:
