@@ -12,9 +12,7 @@ Potentially of use is `smartgadgetBLEread.py` which reads data from a Sensitron 
 ## pihvac.py
 
 nominal output are tab separated rows like:
-'''
-2019-02-07T12:26:09.633537-10:00        24.96   24.50   70.46   70.00   False  False    False   False   True
-'''
+```2019-02-07T12:26:09.633537-10:00        24.96   24.50   70.46   70.00   False  False    False   False   True```
 - Timestamp
 - Temperature last sensor read
 - Temperature setpoint
