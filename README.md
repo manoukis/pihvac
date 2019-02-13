@@ -11,6 +11,10 @@ Potentially of use is `smartgadgetBLEread.py` which reads data from a Sensitron 
 
 ## pihvac.py
 #### Running
+**On 10.200.59.159, `pihvac` is automatically started on boot and outputs a log to `/home/pi/pihvac_autostart.log`.**
+To modify this behaviour, edit `/etc/rc.local`.
+
+To run it in a session on the command line...
 ```
 cd pihvac
 ./maildone.sh ./pihvac.py |& tee -a log0.log
