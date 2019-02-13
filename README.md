@@ -10,17 +10,24 @@ Potentially of use is `smartgadgetBLEread.py` which reads data from a Sensitron 
 
 
 ## pihvac.py
-#### Running
+#### Running automatically
 **On 10.200.59.159, `pihvac` is automatically started on boot and outputs a log to `/home/pi/pihvac_autostart.log`.**
 To modify this behaviour, edit `/etc/rc.local`.
 
-To run it in a session on the command line...
+To change setting (setpoints, light times, ect.), edit `/home/pi/pihvac.py` and then restart the computer `sudo restart now`.
+
+#### Running by hand
+To run it in a session on the command line,
+you will normally want to login and run `byobu`, `tmux`, or `screen` before running this script
+so it doesn't stop when you logout or are disconnected.
+I prefer `tmux` (when you log back in you run `tmux a` to reattach to the session).
 ```
 cd pihvac
 ./maildone.sh ./pihvac.py |& tee -a log0.log
 ```
 replacing `log0.log` with whatever logfile you want.  `-a` means to append to the logfile if it already exists.
 
+#### Log output
 nominal output are tab separated rows like:  
 ```2019-02-07T12:26:09.633537-10:00        24.96   24.50   70.46   70.00   False  False    False   False   True```
 - Timestamp
