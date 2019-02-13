@@ -10,6 +10,12 @@ Potentially of use is `smartgadgetBLEread.py` which reads data from a Sensitron 
 
 
 ## pihvac.py
+#### Running
+```
+cd pihvac
+./maildone.sh ./pihvac.py |& tee -a log0.log
+```
+replacing `log0.log` with whatever logfile you want.  `-a` means to append to the logfile if it already exists.
 
 nominal output are tab separated rows like:  
 ```2019-02-07T12:26:09.633537-10:00        24.96   24.50   70.46   70.00   False  False    False   False   True```
